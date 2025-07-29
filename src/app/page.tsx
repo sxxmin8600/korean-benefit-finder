@@ -6,7 +6,7 @@ export default function Home() {
       <div className="max-w-4xl mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            맞춤형 혜택 찾기
+            맞춤형 혜택 찾기 (Yonsei Financer)
           </h1>
           <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
             간단한 정보 입력만으로 당신에게 맞는 정부, 기업 지원 서비스를 
