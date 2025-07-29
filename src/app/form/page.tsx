@@ -131,8 +131,9 @@ export default function FormPage() {
             >
               <option value="" className="text-gray-500">선택해주세요</option>
               <option value="고등학교 졸업" className="text-black">고등학교 졸업</option>
-              <option value="전문대학 졸업" className="text-black">전문대학 졸업</option>
+              <option value="대학교 재학" className="text-black">대학교 재학</option>
               <option value="대학교 졸업" className="text-black">대학교 졸업</option>
+              <option value="대학원 재학" className="text-black">대학원 재학</option>
               <option value="대학원 졸업" className="text-black">대학원 졸업</option>
             </select>
           </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { validateFormData, checkRateLimit, setSecurityHeaders, ValidationError } from '@/lib/validation';
+import { BenefitMatcher } from '@/lib/benefitDatabase';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
