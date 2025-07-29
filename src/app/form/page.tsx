@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 export default function FormPage() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     age: '',
     region: '',
@@ -26,11 +27,22 @@ export default function FormPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 폼 데이터를 세션 스토리지에 저장
-    sessionStorage.setItem('benefitFormData', JSON.stringify(formData));
-    router.push('/results');
+    setIsSubmitting(true);
+    
+    try {
+      // 폼 데이터를 세션 스토리지에 저장
+      sessionStorage.setItem('benefitFormData', JSON.stringify(formData));
+      
+      // 약간의 지연을 추가하여 로딩 상태를 보여줌
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      router.push('/results');
+    } catch (error) {
+      console.error('폼 제출 오류:', error);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -245,12 +257,26 @@ export default function FormPage() {
           <div className="pt-8">
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-6 px-8 rounded-xl text-xl font-bold hover:from-orange-600 hover:to-red-600 transform hover:scale-105 transition-all duration-200 shadow-xl flex items-center justify-center gap-3"
+              disabled={isSubmitting}
+              className={`w-full py-6 px-8 rounded-xl text-xl font-bold transition-all duration-200 shadow-xl flex items-center justify-center gap-3 ${
+                isSubmitting 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 transform hover:scale-105'
+              }`}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              ✨ AI가 맞춤 혜택 찾기
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                  🤖 AI가 분석 중...
+                </>
+              ) : (
+                <>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  ✨ AI가 맞춤 혜택 찾기
+                </>
+              )}
             </button>
           </div>
         </form>

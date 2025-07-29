@@ -32,6 +32,7 @@ export default function ResultsPage() {
   const [formData, setFormData] = useState<FormData | null>(null);
   const [benefits, setBenefits] = useState<BenefitItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('데이터를 불러오는 중...');
   const [error, setError] = useState<string | null>(null);
   const [savedBenefits, setSavedBenefits] = useState<number[]>([]);
 
@@ -57,7 +58,10 @@ export default function ResultsPage() {
     try {
       setLoading(true);
       setError(null);
+      setLoadingMessage('AI가 맞춤형 혜택을 분석중입니다...');
 
+      setLoadingMessage('정부 혜택 데이터베이스를 검색중...');
+      
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
@@ -65,6 +69,8 @@ export default function ResultsPage() {
         },
         body: JSON.stringify(data),
       });
+      
+      setLoadingMessage('결과를 정리하고 있습니다...');
 
       const result = await response.json();
 
@@ -141,10 +147,32 @@ export default function ResultsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">🤖 AI가 맞춤 혜택을 분석 중...</h2>
-          <p className="text-gray-600">정부/기업 서비스를 찾고 우선순위를 매기고 있습니다</p>
+        <div className="text-center max-w-md mx-auto p-8">
+          {/* 개선된 로딩 애니메이션 */}
+          <div className="relative mb-8">
+            <div className="animate-spin rounded-full h-24 w-24 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-2xl animate-pulse">🤖</div>
+            </div>
+          </div>
+          
+          {/* 동적 메시지 */}
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">AI 분석 진행중</h2>
+          <div className="text-blue-600 font-medium mb-4 min-h-[24px]">
+            {loadingMessage}
+          </div>
+          
+          {/* 진행 단계 표시 */}
+          <div className="flex justify-center space-x-2 mb-6">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+          </div>
+          
+          <p className="text-gray-600 text-sm">
+            18개의 정부/기업 서비스를 검토하여<br/>
+            최적의 혜택을 추천해드립니다
+          </p>
         </div>
       </div>
     );
@@ -153,16 +181,50 @@ export default function ResultsPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">❌</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">오류가 발생했습니다</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Link 
-            href="/form"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            다시 시도하기
-          </Link>
+        <div className="text-center max-w-md mx-auto p-8">
+          {/* 오류 아이콘 */}
+          <div className="relative mb-6">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-3xl text-red-500">⚠️</div>
+            </div>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">분석 중 문제가 발생했습니다</h2>
+          
+          {/* 오류 메시지 박스 */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+          
+          {/* 해결 방법 제안 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-800 mb-2">💡 해결 방법</h3>
+            <ul className="text-blue-700 text-sm text-left space-y-1">
+              <li>• 인터넷 연결을 확인해주세요</li>
+              <li>• 잠시 후 다시 시도해보세요</li>
+              <li>• 문제가 지속되면 관리자에게 문의하세요</li>
+            </ul>
+          </div>
+          
+          {/* 액션 버튼들 */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => {
+                if (formData) {
+                  analyzeWithAI(formData);
+                }
+              }}
+              className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              🔄 다시 시도
+            </button>
+            <Link 
+              href="/form"
+              className="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium text-center"
+            >
+              ← 폼으로 돌아가기
+            </Link>
+          </div>
         </div>
       </div>
     );
