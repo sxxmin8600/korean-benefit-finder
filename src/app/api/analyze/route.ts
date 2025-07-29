@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { validateFormData, checkRateLimit, setSecurityHeaders, ValidationError } from '@/lib/validation';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -323,69 +324,69 @@ const benefitDatabase = [
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 10 * 60 * 1000; // 10분
 
-// 입력 유효성 검사
-function validateInput(data: any) {
-  const requiredFields = ['age', 'region', 'education', 'income'];
-  for (const field of requiredFields) {
-    if (!data[field] || typeof data[field] !== 'string') {
-      return false;
-    }
-  }
-  
-  // interests는 배열이어야 함
-  if (!Array.isArray(data.interests)) {
-    return false;
-  }
-  
-  return true;
-}
-
-// Rate limiting (간단한 구현)
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 10; // 분당 10회
-const RATE_WINDOW = 60 * 1000; // 1분
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const userRequests = requestCounts.get(ip);
-  
-  if (!userRequests || now > userRequests.resetTime) {
-    requestCounts.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
-    return true;
-  }
-  
-  if (userRequests.count >= RATE_LIMIT) {
-    return false;
-  }
-  
-  userRequests.count++;
-  return true;
-}
+// 기존 검증 로직은 validation.ts로 이동됨
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting 체크
+    // 1. Rate limiting 체크 (IP 기반)
     const forwarded = request.headers.get("x-forwarded-for");
     const ip = forwarded ? forwarded.split(",")[0] : request.headers.get("x-real-ip") || "127.0.0.1";
     
-    if (!checkRateLimit(ip)) {
-      return NextResponse.json({
+    if (!checkRateLimit(ip, 8, 60000)) { // 분당 8회로 제한 강화
+      const response = NextResponse.json({
         success: false,
-        error: '요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.'
+        error: '요청 한도를 초과했습니다. 1분 후 다시 시도해주세요.',
+        code: 'RATE_LIMIT_EXCEEDED'
       }, { status: 429 });
+      
+      return setSecurityHeaders(response);
     }
 
-    const body = await request.json();
-    
-    // 입력 유효성 검사
-    if (!validateInput(body)) {
-      return NextResponse.json({
+    // 2. Content-Type 검증
+    const contentType = request.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const response = NextResponse.json({
         success: false,
-        error: '잘못된 입력 데이터입니다.'
+        error: '잘못된 Content-Type입니다.',
+        code: 'INVALID_CONTENT_TYPE'
       }, { status: 400 });
+      
+      return setSecurityHeaders(response);
     }
 
-    const { age, region, education, income, maritalStatus, hasChildren, supportParents, interests } = body;
+    // 3. 요청 본문 크기 제한 (이미 Next.js에서 기본 제한이 있지만 추가 검증)
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      const response = NextResponse.json({
+        success: false,
+        error: '유효하지 않은 JSON 형식입니다.',
+        code: 'INVALID_JSON'
+      }, { status: 400 });
+      
+      return setSecurityHeaders(response);
+    }
+    
+    // 4. 강화된 입력 유효성 검사
+    let validatedData;
+    try {
+      validatedData = validateFormData(body);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        console.warn(`[SECURITY] Validation failed from IP ${ip}:`, error.message, error.field);
+        
+        const response = NextResponse.json({
+          success: false,
+          error: error.message,
+          field: error.field,
+          code: 'VALIDATION_ERROR'
+        }, { status: 400 });
+        
+        return setSecurityHeaders(response);
+      }
+      throw error;
+    }
+
+    const { age, region, education, income, maritalStatus, hasChildren, supportParents, interests } = validatedData;
 
     // 캐시 키 생성
     const cacheKey = JSON.stringify({ age, region, education, income, maritalStatus, hasChildren, supportParents, interests: interests.sort() });
@@ -393,11 +394,13 @@ export async function POST(request: NextRequest) {
     // 캐시 확인
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         data: cached.data,
         cached: true
       });
+      
+      return setSecurityHeaders(response);
     }
 
     // 1. 조건 기반 필터링
@@ -517,39 +520,53 @@ ${filteredBenefits.map(b => `- ${b.title}: ${b.description} (신청난이도: ${
       timestamp: Date.now()
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: responseData,
       cached: false
     });
+    
+    return setSecurityHeaders(response);
 
-  } catch (error: any) {
-    console.error('API Error:', {
-      message: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
+  } catch (error: unknown) {
+    // 보안 로깅: 민감 정보 제거
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[API ERROR] ${new Date().toISOString()}:`, {
+      message: errorMessage,
+      ip: ip.replace(/\d+$/, 'xxx'), // IP 마지막 바이트 마스킹
+      userAgent: request.headers.get('user-agent')?.substring(0, 100) || 'unknown'
     });
     
     // OpenAI API 관련 에러 처리
-    if (error.code === 'insufficient_quota') {
-      return NextResponse.json({
+    const errorObj = error as { code?: string };
+    if (errorObj.code === 'insufficient_quota') {
+      const response = NextResponse.json({
         success: false,
-        error: 'AI 서비스 사용량이 초과되었습니다. 관리자에게 문의해주세요.'
+        error: 'AI 서비스 사용량이 초과되었습니다. 관리자에게 문의해주세요.',
+        code: 'AI_QUOTA_EXCEEDED'
       }, { status: 503 });
+      
+      return setSecurityHeaders(response);
     }
     
-    if (error.code === 'rate_limit_exceeded') {
-      return NextResponse.json({
+    if (errorObj.code === 'rate_limit_exceeded') {
+      const response = NextResponse.json({
         success: false,
-        error: 'AI 서비스 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'
+        error: 'AI 서비스 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+        code: 'AI_RATE_LIMIT'
       }, { status: 429 });
+      
+      return setSecurityHeaders(response);
     }
     
     // 일반적인 에러
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: false,
-      error: 'AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+      error: 'AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      code: 'INTERNAL_ERROR'
     }, { status: 500 });
+    
+    return setSecurityHeaders(response);
   }
 }
 
