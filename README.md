@@ -1,3 +1,13 @@
+# 정부 혜택 매칭 서비스 (Yonsei Financer)
+
+AI 기반 정부 및 기업 지원 혜택 매칭 서비스입니다.
+
+## 주요 기능
+- 개인 정보 기반 맞춤형 혜택 추천
+- ChatGPT API를 활용한 지능형 분석
+- 실시간 혜택 정보 업데이트
+- 관리자 대시보드
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
