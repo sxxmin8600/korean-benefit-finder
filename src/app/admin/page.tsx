@@ -6,7 +6,7 @@ import Link from 'next/link';
 interface UpdateStatus {
   isUpdating: boolean;
   lastUpdate: string | null;
-  lastResults: any;
+  lastResults: Record<string, unknown> | null;
 }
 
 export default function AdminPage() {
@@ -166,7 +166,7 @@ export default function AdminPage() {
               <div className="mt-6">
                 <h3 className="font-semibold mb-2">🆕 새로 발견된 혜택 (미리보기)</h3>
                 <div className="space-y-2">
-                  {status.lastResults.benefits.slice(0, 5).map((benefit: any, index: number) => (
+                  {status.lastResults.benefits.slice(0, 5).map((benefit: Record<string, unknown>, index: number) => (
                     <div key={index} className="p-3 bg-gray-50 rounded border-l-4 border-green-400">
                       <div className="font-medium">{benefit.title}</div>
                       <div className="text-sm text-gray-600">{benefit.agency} - {benefit.category}</div>

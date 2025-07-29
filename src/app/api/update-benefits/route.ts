@@ -5,7 +5,7 @@ import { processScrapedData, removeDuplicates } from '@/lib/aiExtractor';
 // 실행 상태 추적
 let isUpdating = false;
 let lastUpdate: Date | null = null;
-let updateResults: any = null;
+let updateResults: Record<string, unknown> | null = null;
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       data: updateResults
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     isUpdating = false;
     console.error('업데이트 오류:', error);
 
