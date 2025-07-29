@@ -31,10 +31,17 @@ interface BenefitItem {
 export default function ResultsPage() {
   const [formData, setFormData] = useState<FormData | null>(null);
   const [benefits, setBenefits] = useState<BenefitItem[]>([]);
+  const [filteredBenefits, setFilteredBenefits] = useState<BenefitItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState('데이터를 불러오는 중...');
   const [error, setError] = useState<string | null>(null);
   const [savedBenefits, setSavedBenefits] = useState<number[]>([]);
+  
+  // 필터링 및 정렬 상태
+  const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('전체');
+  const [sortBy, setSortBy] = useState<string>('추천순');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     const savedData = sessionStorage.getItem('benefitFormData');
@@ -76,6 +83,7 @@ export default function ResultsPage() {
 
       if (result.success) {
         setBenefits(result.data.benefits);
+        setFilteredBenefits(result.data.benefits);
       } else {
         setError(result.error || 'AI 분석 중 오류가 발생했습니다.');
       }
@@ -130,6 +138,58 @@ export default function ResultsPage() {
       default: return 'text-gray-600 bg-gray-100';
     }
   };
+
+  // 필터링 및 정렬 로직
+  useEffect(() => {
+    let filtered = [...benefits];
+
+    // 카테고리 필터링
+    if (selectedCategory !== '전체') {
+      filtered = filtered.filter(benefit => benefit.category === selectedCategory);
+    }
+
+    // 난이도 필터링
+    if (selectedDifficulty !== '전체') {
+      filtered = filtered.filter(benefit => benefit.difficulty === selectedDifficulty);
+    }
+
+    // 검색 필터링
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(benefit => 
+        benefit.title.toLowerCase().includes(query) ||
+        benefit.agency.toLowerCase().includes(query) ||
+        benefit.description.toLowerCase().includes(query)
+      );
+    }
+
+    // 정렬
+    switch (sortBy) {
+      case '추천순':
+        // 기본 AI 추천 순서 유지
+        break;
+      case '혜택 높은순':
+        filtered.sort((a, b) => {
+          const order = { '높음': 3, '중간': 2, '낮음': 1 };
+          return (order[b.benefit] || 0) - (order[a.benefit] || 0);
+        });
+        break;
+      case '난이도 쉬운순':
+        filtered.sort((a, b) => {
+          const order = { '쉬움': 3, '보통': 2, '어려움': 1 };
+          return (order[b.difficulty] || 0) - (order[a.difficulty] || 0);
+        });
+        break;
+      case '가나다순':
+        filtered.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+        break;
+    }
+
+    setFilteredBenefits(filtered);
+  }, [benefits, selectedCategory, selectedDifficulty, sortBy, searchQuery]);
+
+  // 카테고리 목록 추출
+  const categories = ['전체', ...Array.from(new Set(benefits.map(b => b.category)))];
 
   if (!formData) {
     return (
@@ -273,16 +333,124 @@ export default function ResultsPage() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* 필터링 및 정렬 컨트롤 */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                🎯 총 {benefits.length}개의 맞춤 혜택을 찾았습니다
-              </h2>
+              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  🎯 총 {benefits.length}개 중 {filteredBenefits.length}개의 혜택
+                </h2>
+                
+                {/* 검색바 */}
+                <div className="relative w-full lg:w-80">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="혜택명, 기관명으로 검색..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </div>
+              </div>
+              
+              {/* 필터링 옵션들 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* 카테고리 필터 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">카테고리</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* 난이도 필터 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">신청 난이도</label>
+                  <select
+                    value={selectedDifficulty}
+                    onChange={(e) => setSelectedDifficulty(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="전체">전체</option>
+                    <option value="쉬움">쉬움</option>
+                    <option value="보통">보통</option>
+                    <option value="어려움">어려움</option>
+                  </select>
+                </div>
+                
+                {/* 정렬 옵션 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">정렬 기준</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="추천순">AI 추천순</option>
+                    <option value="혜택 높은순">혜택 크기순</option>
+                    <option value="난이도 쉬운순">난이도 쉬운순</option>
+                    <option value="가나다순">가나다순</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* 필터 초기화 버튼 */}
+              {(selectedCategory !== '전체' || selectedDifficulty !== '전체' || sortBy !== '추천순' || searchQuery.trim()) && (
+                <button
+                  onClick={() => {
+                    setSelectedCategory('전체');
+                    setSelectedDifficulty('전체');
+                    setSortBy('추천순');
+                    setSearchQuery('');
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  🔄 필터 초기화
+                </button>
+              )}
+            </div>
               <p className="text-gray-600">
                 AI가 분석한 우선순위로 정렬되었습니다. 각 혜택의 추천 이유를 확인해보세요!
               </p>
             </div>
 
-            {benefits.map((benefit, index) => (
+            {filteredBenefits.length === 0 ? (
+              <div className="bg-white rounded-lg p-8 shadow-sm text-center">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  조건에 맞는 혜택이 없습니다
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  다른 필터 조건을 시도하거나 검색어를 바꿔보세요.
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedCategory('전체');
+                    setSelectedDifficulty('전체');
+                    setSortBy('추천순');
+                    setSearchQuery('');
+                  }}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  🔄 필터 초기화
+                </button>
+              </div>
+            ) : (
+              filteredBenefits.map((benefit, index) => (
               <div key={benefit.id} className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -365,7 +533,8 @@ export default function ResultsPage() {
                   </button>
                 </div>
               </div>
-            ))}
+              ))
+            )}
 
             <div className="text-center">
               <Link 
