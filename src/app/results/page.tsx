@@ -419,7 +419,9 @@ export default function ResultsPage() {
                 </button>
               )}
             </div>
-              <p className="text-gray-600">
+            
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-gray-600 text-center">
                 AI가 분석한 우선순위로 정렬되었습니다. 각 혜택의 추천 이유를 확인해보세요!
               </p>
             </div>
