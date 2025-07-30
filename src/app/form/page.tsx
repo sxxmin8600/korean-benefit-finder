@@ -36,19 +36,26 @@ function FormContent() {
         setFormData(historyItem.formData);
         // URL 파라미터 제거 (깔끔한 URL 유지)
         window.history.replaceState({}, '', '/form');
+        return; // 히스토리 로드가 우선
       }
     }
 
-    // keepFormData 플래그가 있으면 이전 검색 데이터 유지
-    const keepFormData = sessionStorage.getItem('keepFormData');
-    if (keepFormData === 'true') {
-      const savedData = sessionStorage.getItem('benefitFormData');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        setFormData(data);
+    // keepFormData 플래그가 있으면 이전 검색 데이터 유지 (클라이언트 사이드에서만)
+    if (typeof window !== 'undefined') {
+      const keepFormData = sessionStorage.getItem('keepFormData');
+      if (keepFormData === 'true') {
+        const savedData = sessionStorage.getItem('benefitFormData');
+        if (savedData) {
+          try {
+            const data = JSON.parse(savedData);
+            setFormData(data);
+          } catch (error) {
+            console.error('폼 데이터 파싱 오류:', error);
+          }
+        }
+        // 플래그 제거
+        sessionStorage.removeItem('keepFormData');
       }
-      // 플래그 제거
-      sessionStorage.removeItem('keepFormData');
     }
   }, [searchParams]);
 
