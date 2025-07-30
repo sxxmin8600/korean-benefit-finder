@@ -300,8 +300,8 @@ function FormContent() {
             <label className="block text-lg font-bold text-black mb-4">
               💑 혼인상태
             </label>
-            <div className="grid grid-cols-3 gap-4">
-              {['미혼', '기혼', '기타'].map((status) => (
+            <div className="grid grid-cols-2 gap-4">
+              {['미혼', '기혼'].map((status) => (
                 <label key={status} className="flex items-center p-3 bg-white rounded-lg border-2 border-gray-300 hover:border-pink-300 cursor-pointer">
                   <input
                     type="radio"
