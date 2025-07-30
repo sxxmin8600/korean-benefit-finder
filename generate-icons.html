@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas-192" width="192" height="192" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+    <canvas id="canvas-512" width="512" height="512" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+    <br>
+    <button onclick="downloadIcon(192)">Download 192x192</button>
+    <button onclick="downloadIcon(512)">Download 512x512</button>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 192;
+            
+            // 배경 그라디언트
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#3B82F6');
+            gradient.addColorStop(1, '#1976D2');
+            
+            // 배경 (둥근 모서리)
+            ctx.fillStyle = gradient;
+            ctx.roundRect(0, 0, size, size, 24 * scale);
+            ctx.fill();
+            
+            // 돋보기
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 8 * scale;
+            ctx.beginPath();
+            ctx.arc(72 * scale, 72 * scale, 28 * scale, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // 돋보기 손잡이
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(94 * scale, 94 * scale);
+            ctx.lineTo(116 * scale, 116 * scale);
+            ctx.stroke();
+            
+            // 선물상자
+            ctx.fillStyle = '#F59515';
+            ctx.roundRect(108 * scale, 52 * scale, 40 * scale, 40 * scale, 4 * scale);
+            ctx.fill();
+            
+            // 리본
+            ctx.fillStyle = '#EA4335';
+            ctx.fillRect(116 * scale, 52 * scale, 24 * scale, 6 * scale);
+            ctx.fillRect(126 * scale, 46 * scale, 4 * scale, 18 * scale);
+            
+            // 별 장식들
+            ctx.fillStyle = '#FBCF24';
+            ctx.beginPath();
+            ctx.arc(128 * scale, 76 * scale, 3 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(120 * scale, 68 * scale, 2 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(136 * scale, 84 * scale, 2 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // 192x192 아이콘
+        const canvas192 = document.getElementById('canvas-192');
+        drawIcon(canvas192, 192);
+        
+        // 512x512 아이콘
+        const canvas512 = document.getElementById('canvas-512');
+        drawIcon(canvas512, 512);
+
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`canvas-${size}`);
+            const link = document.createElement('a');
+            link.download = `icon-${size}x${size}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // roundRect polyfill for older browsers
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+                this.beginPath();
+                this.moveTo(x + radius, y);
+                this.lineTo(x + width - radius, y);
+                this.quadraticCurveTo(x + width, y, x + width, y + radius);
+                this.lineTo(x + width, y + height - radius);
+                this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                this.lineTo(x + radius, y + height);
+                this.quadraticCurveTo(x, y + height, x, y + height - radius);
+                this.lineTo(x, y + radius);
+                this.quadraticCurveTo(x, y, x + radius, y);
+                this.closePath();
+            };
+        }
+    </script>
+</body>
+</html>

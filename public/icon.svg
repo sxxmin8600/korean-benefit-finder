@@ -1,0 +1,21 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="192" height="192" rx="24" fill="url(#gradient0_linear_20_20)"/>
+<defs>
+<linearGradient id="gradient0_linear_20_20" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3B82F6"/>
+<stop offset="1" stop-color="#1976D2"/>
+</linearGradient>
+</defs>
+<!-- 돋보기 -->
+<circle cx="72" cy="72" r="28" stroke="white" stroke-width="8" fill="none"/>
+<line x1="94" y1="94" x2="116" y2="116" stroke="white" stroke-width="8" stroke-linecap="round"/>
+<!-- 선물상자 -->
+<rect x="108" y="52" width="40" height="40" rx="4" fill="#F59515"/>
+<!-- 리본 -->
+<rect x="116" y="52" width="24" height="6" fill="#EA4335"/>
+<rect x="126" y="46" width="4" height="18" fill="#EA4335"/>
+<!-- 별 장식 -->
+<circle cx="128" cy="76" r="3" fill="#FBCF24"/>
+<circle cx="120" cy="68" r="2" fill="#FBCF24"/>
+<circle cx="136" cy="84" r="2" fill="#FBCF24"/>
+</svg>
