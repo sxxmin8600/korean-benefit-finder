@@ -1600,20 +1600,25 @@ export class BenefitMatcher {
       benefit.matchScore >= minAcceptableScore
     );
 
-    // 4. 최소 3개, 최대 25개 범위에서 동적 조정
+    // 4. 최소 3개로 설정하되, 조건에 맞는 모든 혜택 표시
     const minResults = Math.min(3, filteredBenefits.length);
-    const maxResults = Math.min(25, filteredBenefits.length);
     
-    // 점수 차이가 큰 경우 더 적은 수로 제한
-    let finalCount = maxResults;
-    if (filteredBenefits.length > 10) {
-      const scoreGap = topScore - filteredBenefits[9].matchScore;
-      if (scoreGap > 30) {
-        finalCount = Math.min(10, maxResults);
+    // 점수가 낮은 혜택들은 필터링하지만 개수 제한은 없음
+    if (filteredBenefits.length <= minResults) {
+      return filteredBenefits;
+    }
+    
+    // 상위 혜택들과 점수 차이가 너무 큰 하위 혜택들만 제외
+    if (filteredBenefits.length > 15) {
+      const cutoffIndex = Math.floor(filteredBenefits.length * 0.8); // 상위 80%만 유지
+      const scoreThreshold = filteredBenefits[cutoffIndex].matchScore;
+      if (topScore - scoreThreshold > 40) {
+        return filteredBenefits.slice(0, cutoffIndex);
       }
     }
     
-    return filteredBenefits.slice(0, Math.max(minResults, finalCount));
+    // 조건에 맞는 모든 혜택 반환 (개수 제한 없음)
+    return filteredBenefits;
   }
 
   private calculateMatchScore(template: BenefitTemplate, userProfile: any): number {

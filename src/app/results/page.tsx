@@ -542,42 +542,19 @@ export default function ResultsPage() {
               ))
             )}
 
-            <div className="text-center space-y-4">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  💡 더 나은 결과를 원하시나요?
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  조건을 조정하면 더 많은 혜택을 찾을 수 있어요
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <button 
-                    onClick={() => {
-                      // 이전 검색 데이터를 유지하여 수정 가능하도록
-                      if (typeof window !== 'undefined') {
-                        sessionStorage.setItem('keepFormData', 'true');
-                        window.location.href = '/form';
-                      }
-                    }}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    🔄 조건 수정하여 다시 검색
-                  </button>
-                  <button 
-                    onClick={() => {
-                      // 완전히 새로운 검색을 위해 데이터 삭제
-                      if (typeof window !== 'undefined') {
-                        sessionStorage.removeItem('benefitFormData');
-                        sessionStorage.removeItem('keepFormData'); // 혹시 남아있을 플래그도 제거
-                        window.location.href = '/form';
-                      }
-                    }}
-                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                  >
-                    ✨ 새로운 조건으로 검색
-                  </button>
-                </div>
-              </div>
+            <div className="text-center">
+              <button 
+                onClick={() => {
+                  // 이전 검색 데이터를 유지하여 수정 가능하도록
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('keepFormData', 'true');
+                    window.location.href = '/form';
+                  }
+                }}
+                className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg shadow-lg"
+              >
+                🔄 조건 수정하여 다시 검색
+              </button>
             </div>
           </div>
         )}
