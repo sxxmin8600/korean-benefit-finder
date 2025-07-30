@@ -38,6 +38,18 @@ function FormContent() {
         window.history.replaceState({}, '', '/form');
       }
     }
+
+    // keepFormData 플래그가 있으면 이전 검색 데이터 유지
+    const keepFormData = sessionStorage.getItem('keepFormData');
+    if (keepFormData === 'true') {
+      const savedData = sessionStorage.getItem('benefitFormData');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        setFormData(data);
+      }
+      // 플래그 제거
+      sessionStorage.removeItem('keepFormData');
+    }
   }, [searchParams]);
 
   const handleInterestChange = (interest: string) => {

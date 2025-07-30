@@ -1586,13 +1586,34 @@ export class BenefitMatcher {
       };
     });
 
-    // 2. 점수 기준으로 정렬하고 상위 결과만 반환
+    // 2. 점수 기준으로 정렬하고 필터링 
     const sortedBenefits = scoredBenefits
-      .filter(benefit => benefit.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 15); // 최대 15개 결과 반환
+      .sort((a, b) => b.matchScore - a.matchScore);
 
-    return sortedBenefits;
+    // 3. 동적 필터링: 상위 점수와의 차이를 고려하여 적절한 개수 반환
+    if (sortedBenefits.length === 0) return [];
+    
+    const topScore = sortedBenefits[0].matchScore;
+    const minAcceptableScore = Math.max(30, topScore - 50); // 최고점수 대비 50점 차이까지 허용
+    
+    const filteredBenefits = sortedBenefits.filter(benefit => 
+      benefit.matchScore >= minAcceptableScore
+    );
+
+    // 4. 최소 3개, 최대 25개 범위에서 동적 조정
+    const minResults = Math.min(3, filteredBenefits.length);
+    const maxResults = Math.min(25, filteredBenefits.length);
+    
+    // 점수 차이가 큰 경우 더 적은 수로 제한
+    let finalCount = maxResults;
+    if (filteredBenefits.length > 10) {
+      const scoreGap = topScore - filteredBenefits[9].matchScore;
+      if (scoreGap > 30) {
+        finalCount = Math.min(10, maxResults);
+      }
+    }
+    
+    return filteredBenefits.slice(0, Math.max(minResults, finalCount));
   }
 
   private calculateMatchScore(template: BenefitTemplate, userProfile: any): number {
@@ -1609,9 +1630,14 @@ export class BenefitMatcher {
       }
     }
 
-    // 연령대 매칭
-    if (targetGroups.age && targetGroups.age.includes(userProfile.age)) {
-      score += 20;
+    // 연령대 매칭 (필수 조건으로 강화)
+    if (targetGroups.age && targetGroups.age.length > 0) {
+      if (targetGroups.age.includes(userProfile.age)) {
+        score += 20;
+      } else {
+        // 연령 조건이 명시되어 있는데 맞지 않으면 큰 점수 차감
+        score -= 50;
+      }
     }
 
     // 지역 매칭
