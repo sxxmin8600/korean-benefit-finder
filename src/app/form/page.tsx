@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getSearchHistory, removeFromSearchHistory, clearSearchHistory, getRelativeTimeString, type SearchHistoryItem } from '@/lib/searchHistory';
 
 export default function FormPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     age: '',
@@ -17,6 +19,26 @@ export default function FormPage() {
     supportParents: '',
     interests: [] as string[]
   });
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // 컴포넌트 마운트 시 검색 기록 로드 및 URL 파라미터 처리
+  useEffect(() => {
+    const history = getSearchHistory();
+    setSearchHistory(history);
+    setShowHistory(history.length > 0);
+
+    // URL에서 history 파라미터가 있으면 해당 검색 기록 로드
+    const historyId = searchParams.get('history');
+    if (historyId) {
+      const historyItem = history.find(item => item.id === historyId);
+      if (historyItem) {
+        setFormData(historyItem.formData);
+        // URL 파라미터 제거 (깔끔한 URL 유지)
+        window.history.replaceState({}, '', '/form');
+      }
+    }
+  }, [searchParams]);
 
   const handleInterestChange = (interest: string) => {
     setFormData(prev => ({
@@ -25,6 +47,26 @@ export default function FormPage() {
         ? prev.interests.filter(i => i !== interest)
         : [...prev.interests, interest]
     }));
+  };
+
+  // 검색 기록에서 폼 데이터 로드
+  const loadFromHistory = (historyItem: SearchHistoryItem) => {
+    setFormData(historyItem.formData);
+  };
+
+  // 검색 기록 삭제
+  const handleDeleteHistory = (id: string) => {
+    removeFromSearchHistory(id);
+    const updatedHistory = getSearchHistory();
+    setSearchHistory(updatedHistory);
+    setShowHistory(updatedHistory.length > 0);
+  };
+
+  // 모든 검색 기록 삭제
+  const handleClearAllHistory = () => {
+    clearSearchHistory();
+    setSearchHistory([]);
+    setShowHistory(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,6 +106,80 @@ export default function FormPage() {
             간단한 정보만 입력하시면 AI가 최적의 혜택을 찾아드립니다
           </p>
         </div>
+
+        {/* 검색 기록 섹션 */}
+        {showHistory && (
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-gray-200 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                🕒 최근 검색 기록
+              </h2>
+              <button
+                onClick={handleClearAllHistory}
+                className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+              >
+                전체 삭제
+              </button>
+            </div>
+            <div className="grid gap-3">
+              {searchHistory.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium text-gray-900">{item.displayName}</h3>
+                      {item.resultCount && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          {item.resultCount}개 혜택
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">{getRelativeTimeString(item.timestamp)}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => loadFromHistory(item)}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      다시 검색
+                    </button>
+                    <button
+                      onClick={() => handleDeleteHistory(item.id)}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      title="삭제"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setShowHistory(false)}
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                검색 기록 숨기기
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 검색 기록 표시 버튼 (숨겨져 있을 때) */}
+        {!showHistory && searchHistory.length > 0 && (
+          <div className="text-center mb-6">
+            <button
+              onClick={() => setShowHistory(true)}
+              className="text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-2 mx-auto"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              최근 검색 기록 보기 ({searchHistory.length}개)
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="bg-white/95 backdrop-blur-sm rounded-2xl p-10 shadow-2xl border border-gray-200 space-y-8">
           {/* 연령대 */}

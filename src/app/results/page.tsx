@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { addToSearchHistory } from '@/lib/searchHistory';
 
 interface FormData {
   age: string;
@@ -84,6 +85,9 @@ export default function ResultsPage() {
       if (result.success) {
         setBenefits(result.data.benefits);
         setFilteredBenefits(result.data.benefits);
+        
+        // 검색 기록에 저장
+        addToSearchHistory(data, result.data.benefits.length);
       } else {
         setError(result.error || 'AI 분석 중 오류가 발생했습니다.');
       }

@@ -1,6 +1,16 @@
+'use client';
+
 import Link from "next/link";
+import { useEffect, useState } from 'react';
+import { getSearchHistory, getRelativeTimeString, type SearchHistoryItem } from '@/lib/searchHistory';
 
 export default function Home() {
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+
+  useEffect(() => {
+    const history = getSearchHistory().slice(0, 3); // 최근 3개만 표시
+    setSearchHistory(history);
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="max-w-4xl mx-auto px-4 py-16">
@@ -97,6 +107,53 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* 최근 검색 기록 섹션 */}
+        {searchHistory.length > 0 && (
+          <div className="mb-16">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                🕒 최근 검색 기록
+              </h2>
+              <p className="text-gray-600">
+                이전 검색 조건으로 빠르게 다시 찾아보세요
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              {searchHistory.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/form?history=${item.id}`}
+                  className="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-gray-900 text-sm">{item.displayName}</h3>
+                    {item.resultCount && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                        {item.resultCount}개
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">{getRelativeTimeString(item.timestamp)}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-blue-600 font-medium">다시 검색하기</span>
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="text-center mt-6">
+              <Link
+                href="/form"
+                className="text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
+              >
+                모든 검색 기록 보기 →
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className="text-center mt-16">
           <Link 
