@@ -230,7 +230,7 @@ export default function ResultsPage() {
           </div>
           
           <p className="text-gray-600 text-sm">
-            18개의 정부/기업 서비스를 검토하여<br/>
+            90개의 정부/기업 서비스를 검토하여<br/>
             최적의 혜택을 추천해드립니다
           </p>
         </div>
